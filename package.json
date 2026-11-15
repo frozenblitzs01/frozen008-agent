@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "express": "^5.3.0",
+    "js-sha3": "^0.9.3",
+    "snarkjs": "^0.7.5"
+  },
+  "description": "Proof Gatekeeper agent for zkVerify Agent Games (frozen008)",
+  "license": "MIT",
+  "main": "server.js",
+  "name": "frozen008-agent",
+  "scripts": {
+    "download-circuits": "bash scripts/download-circuits.sh",
+    "start": "node server.js",
+    "test": "node test/local-test.js"
+  },
+  "version": "1.0.0",
+  "devDependencies": {
+    "circomlibjs": "^0.1.7"
+  }
+}
