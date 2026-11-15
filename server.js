@@ -74,7 +74,7 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', agent: 'frozen008', service: 'proof-gatekeeper' });
 });
 
-app.post('/agent', async (req, res) => {
+async function handlePost(req, res, probeOk) {
   const startedAt = Date.now();
   const raw = req.body; // Buffer (express.raw)
   const log = (msg, extra = {}) => console.log(JSON.stringify({ ts: new Date().toISOString(), ...extra, msg }));
@@ -94,6 +94,10 @@ app.post('/agent', async (req, res) => {
     return sendSigned(res, 400, { error: 'invalid json' });
   }
   if (!envelope || envelope.type !== TASK_TYPE) {
+    // The platform probes the registered endpoint root with a signed
+    // preflight request whose type is not the task type. A signed 200
+    // here is what the health check and preflight require.
+    if (probeOk) return sendSigned(res, 200, { status: 'ok', agent: 'frozen008', service: 'proof-gatekeeper' });
     return sendSigned(res, 400, { error: 'unsupported task type', type: envelope && envelope.type });
   }
 
@@ -155,10 +159,17 @@ app.post('/agent', async (req, res) => {
 
   log('responding', { task_id: taskId, total_ms: Date.now() - startedAt, with_proof: !!response.proof });
   return sendSigned(res, 200, response);
-});
+}
+
+app.post('/agent', (req, res) => handlePost(req, res, false));
+
+// The platform POSTs tasks AND the signed preflight to the registered
+// endpoint root, not to /agent. Unknown types at the root are answered
+// 200 so the health check / preflight pass.
+app.post('/', (req, res) => handlePost(req, res, true));
 
 app.listen(PORT, () => {
-  console.log(`[frozen008] proof-gatekeeper listening on :${PORT} (health: /health, tasks: POST /agent)`);
+  console.log(`[frozen008] proof-gatekeeper listening on :${PORT} (health: /health, tasks: POST / and /agent)`);
 });
 
 module.exports = app;
